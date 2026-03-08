@@ -1,0 +1,1006 @@
+{
+  "info": {
+    "name": "Transport Passenger API - Coleccion de pruebas completa",
+    "description": "Coleccion Postman generada a partir del analisis del proyecto.\n\nResumen de accesos por rol:\n- Auth: publico\n- ResourceA (Passenger): USER = GET, POST | ADMIN = CRUD completo\n- ResourceB (Trip): USER = GET | ADMIN = CRUD completo\n\nNotas:\n- El admin bootstrap del proyecto es admin@transport.local / Admin123!\n- El register siempre crea usuarios con rol USER.\n- La coleccion guarda tokenAdmin, tokenUser, passengerId y tripId en variables de coleccion.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:8080"
+    },
+    {
+      "key": "tokenAdmin",
+      "value": ""
+    },
+    {
+      "key": "tokenUser",
+      "value": ""
+    },
+    {
+      "key": "userEmail",
+      "value": ""
+    },
+    {
+      "key": "userPassword",
+      "value": "Password123"
+    },
+    {
+      "key": "userUsername",
+      "value": ""
+    },
+    {
+      "key": "passengerId",
+      "value": ""
+    },
+    {
+      "key": "tripId",
+      "value": ""
+    },
+    {
+      "key": "nonExistingId",
+      "value": "999999"
+    }
+  ],
+  "item": [
+    {
+      "name": "Auth",
+      "description": "Endpoints publicos. No requieren token. Register crea usuarios USER.",
+      "item": [
+        {
+          "name": "01 - Register USER",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/auth/register",
+            "description": "Acceso: PUBLICO. Crea un usuario USER y retorna JWT.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"username\": \"{{userUsername}}\",\n  \"email\": \"{{userEmail}}\",\n  \"password\": \"{{userPassword}}\"\n}"
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const suffix = Date.now();",
+                  "pm.collectionVariables.set(\"userUsername\", `user_${suffix}`);",
+                  "pm.collectionVariables.set(\"userEmail\", `user_${suffix}@correo.com`);",
+                  "if (!pm.collectionVariables.get(\"userPassword\")) {",
+                  "  pm.collectionVariables.set(\"userPassword\", \"Password123\");",
+                  "}"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status 201 Created\", function () {",
+                  "  pm.response.to.have.status(201);",
+                  "});",
+                  "const json = pm.response.json();",
+                  "pm.test(\"Retorna token y rol USER\", function () {",
+                  "  pm.expect(json.token).to.be.a(\"string\").and.not.empty;",
+                  "  pm.expect(json.tokenType).to.eql(\"Bearer\");",
+                  "  pm.expect(json.role).to.eql(\"USER\");",
+                  "});",
+                  "pm.collectionVariables.set(\"tokenUser\", json.token);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "02 - Login ADMIN",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/auth/login",
+            "description": "Acceso: PUBLICO. Login del admin bootstrap.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"admin@transport.local\",\n  \"password\": \"Admin123!\"\n}"
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status 200 OK\", function () {",
+                  "  pm.response.to.have.status(200);",
+                  "});",
+                  "const json = pm.response.json();",
+                  "pm.test(\"Retorna token y rol ADMIN\", function () {",
+                  "  pm.expect(json.token).to.be.a(\"string\").and.not.empty;",
+                  "  pm.expect(json.role).to.eql(\"ADMIN\");",
+                  "});",
+                  "pm.collectionVariables.set(\"tokenAdmin\", json.token);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "03 - Login USER",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/auth/login",
+            "description": "Acceso: PUBLICO. Login del usuario creado en el paso 01.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{userEmail}}\",\n  \"password\": \"{{userPassword}}\"\n}"
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status 200 OK\", function () {",
+                  "  pm.response.to.have.status(200);",
+                  "});",
+                  "const json = pm.response.json();",
+                  "pm.test(\"Retorna token y rol USER\", function () {",
+                  "  pm.expect(json.token).to.be.a(\"string\").and.not.empty;",
+                  "  pm.expect(json.role).to.eql(\"USER\");",
+                  "});",
+                  "pm.collectionVariables.set(\"tokenUser\", json.token);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "04 - Register duplicate email",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/auth/register",
+            "description": "Acceso: PUBLICO. Debe fallar con 409 si el email ya existe.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"username\": \"otro_{{userUsername}}\",\n  \"email\": \"{{userEmail}}\",\n  \"password\": \"{{userPassword}}\"\n}"
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status 409 Conflict\", function () {",
+                  "  pm.response.to.have.status(409);",
+                  "});",
+                  "const json = pm.response.json();",
+                  "pm.test(\"Mensaje de email duplicado\", function () {",
+                  "  pm.expect(json.message).to.include(\"Email already registered\");",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "05 - Register invalid payload",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/auth/register",
+            "description": "Acceso: PUBLICO. Valida constraints de RegisterRequest.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"username\": \"\",\n  \"email\": \"correo-invalido\",\n  \"password\": \"123\"\n}"
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status 400 Bad Request\", function () {",
+                  "  pm.response.to.have.status(400);",
+                  "});",
+                  "const json = pm.response.json();",
+                  "pm.test(\"Retorna mensaje de validacion\", function () {",
+                  "  pm.expect(json.message).to.be.a(\"string\").and.not.empty;",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "06 - Login invalid credentials",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/auth/login",
+            "description": "Acceso: PUBLICO. Debe fallar con 401 por credenciales invalidas.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{userEmail}}\",\n  \"password\": \"PasswordIncorrecto\"\n}"
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status 401 Unauthorized\", function () {",
+                  "  pm.response.to.have.status(401);",
+                  "});",
+                  "const json = pm.response.json();",
+                  "pm.test(\"Mensaje de credenciales invalidas\", function () {",
+                  "  pm.expect(json.message).to.include(\"Invalid credentials\");",
+                  "});"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "ResourceA - Passenger",
+      "description": "Acceso por rol: USER = GET, POST. ADMIN = GET, POST, PUT, DELETE.",
+      "item": [
+        {
+          "name": "01 - Create Passenger as USER",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{tokenUser}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/api/resourceA",
+            "description": "Acceso: USER y ADMIN. Crea passenger y guarda passengerId.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"fullName\": \"Ana Perez\",\n  \"documentNumber\": \"CC{{$timestamp}}\",\n  \"email\": \"ana+{{$timestamp}}@correo.com\",\n  \"status\": \"ACTIVE\"\n}"
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status 201 Created\", function () {",
+                  "  pm.response.to.have.status(201);",
+                  "});",
+                  "const json = pm.response.json();",
+                  "pm.test(\"Retorna estructura de passenger\", function () {",
+                  "  pm.expect(json.id).to.exist;",
+                  "  pm.expect(json.fullName).to.eql(\"Ana Perez\");",
+                  "  pm.expect(json.status).to.eql(\"ACTIVE\");",
+                  "});",
+                  "pm.collectionVariables.set(\"passengerId\", json.id);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "02 - Get Passengers as USER",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{tokenUser}}"
+              }
+            ],
+            "url": "{{baseUrl}}/api/resourceA",
+            "description": "Acceso: USER y ADMIN."
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status 200 OK\", function () {",
+                  "  pm.response.to.have.status(200);",
+                  "});",
+                  "const json = pm.response.json();",
+                  "pm.test(\"Retorna arreglo\", function () {",
+                  "  pm.expect(json).to.be.an(\"array\");",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "03 - Get Passenger By Id as USER",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{tokenUser}}"
+              }
+            ],
+            "url": "{{baseUrl}}/api/resourceA/{{passengerId}}",
+            "description": "Acceso: USER y ADMIN."
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status 200 OK\", function () {",
+                  "  pm.response.to.have.status(200);",
+                  "});",
+                  "const json = pm.response.json();",
+                  "pm.test(\"Retorna el passenger creado\", function () {",
+                  "  pm.expect(String(json.id)).to.eql(String(pm.collectionVariables.get(\"passengerId\")));",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "04 - Create Passenger invalid payload",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{tokenUser}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/api/resourceA",
+            "description": "Acceso: USER y ADMIN. Debe fallar por validacion.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"fullName\": \"\",\n  \"documentNumber\": \"\",\n  \"email\": \"email-invalido\",\n  \"status\": \"OTRO\"\n}"
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status 400 Bad Request\", function () {",
+                  "  pm.response.to.have.status(400);",
+                  "});",
+                  "const json = pm.response.json();",
+                  "pm.test(\"Retorna error de validacion\", function () {",
+                  "  pm.expect(json.message).to.be.a(\"string\").and.not.empty;",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "05 - Update Passenger as USER forbidden",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{tokenUser}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/api/resourceA/{{passengerId}}",
+            "description": "Acceso esperado: solo ADMIN. USER debe recibir 403.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"fullName\": \"Ana Maria Perez\",\n  \"documentNumber\": \"CC0001\",\n  \"email\": \"ana.update@correo.com\",\n  \"status\": \"ACTIVE\"\n}"
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status 403 Forbidden\", function () {",
+                  "  pm.response.to.have.status(403);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "06 - Delete Passenger as USER forbidden",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{tokenUser}}"
+              }
+            ],
+            "url": "{{baseUrl}}/api/resourceA/{{passengerId}}",
+            "description": "Acceso esperado: solo ADMIN. USER debe recibir 403."
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status 403 Forbidden\", function () {",
+                  "  pm.response.to.have.status(403);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "07 - Update Passenger as ADMIN",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{tokenAdmin}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/api/resourceA/{{passengerId}}",
+            "description": "Acceso: solo ADMIN.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"fullName\": \"Ana Maria Perez\",\n  \"documentNumber\": \"CC0001\",\n  \"email\": \"ana.update@correo.com\",\n  \"status\": \"ACTIVE\"\n}"
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status 200 OK\", function () {",
+                  "  pm.response.to.have.status(200);",
+                  "});",
+                  "const json = pm.response.json();",
+                  "pm.test(\"Actualiza passenger\", function () {",
+                  "  pm.expect(json.fullName).to.eql(\"Ana Maria Perez\");",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "08 - Delete Passenger as ADMIN",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{tokenAdmin}}"
+              }
+            ],
+            "url": "{{baseUrl}}/api/resourceA/{{passengerId}}",
+            "description": "Acceso: solo ADMIN."
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status 204 No Content\", function () {",
+                  "  pm.response.to.have.status(204);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "09 - Get Passenger Not Found",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{tokenUser}}"
+              }
+            ],
+            "url": "{{baseUrl}}/api/resourceA/{{nonExistingId}}",
+            "description": "Acceso: USER y ADMIN. Debe retornar 404 si el id no existe."
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status 404 Not Found\", function () {",
+                  "  pm.response.to.have.status(404);",
+                  "});",
+                  "const json = pm.response.json();",
+                  "pm.test(\"Mensaje correcto\", function () {",
+                  "  pm.expect(json.message).to.include(\"Passenger not found\");",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "10 - Get Passengers without token",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/api/resourceA",
+            "description": "Sin token. Debe rechazar acceso."
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status 401 o 403\", function () {",
+                  "  pm.expect([401, 403]).to.include(pm.response.code);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "ResourceB - Trip",
+      "description": "Acceso por rol: USER = solo GET. ADMIN = GET, POST, PUT, DELETE.",
+      "item": [
+        {
+          "name": "01 - Create Trip as ADMIN",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{tokenAdmin}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/api/resourceB",
+            "description": "Acceso: solo ADMIN. Crea trip y guarda tripId.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"code\": \"TR-{{$timestamp}}\",\n  \"origin\": \"Bogota\",\n  \"destination\": \"Medellin\",\n  \"departureTime\": \"2030-01-01T08:00:00\",\n  \"availableSeats\": 30,\n  \"status\": \"SCHEDULED\"\n}"
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status 201 Created\", function () {",
+                  "  pm.response.to.have.status(201);",
+                  "});",
+                  "const json = pm.response.json();",
+                  "pm.test(\"Retorna estructura de trip\", function () {",
+                  "  pm.expect(json.id).to.exist;",
+                  "  pm.expect(json.origin).to.eql(\"Bogota\");",
+                  "  pm.expect(json.destination).to.eql(\"Medellin\");",
+                  "});",
+                  "pm.collectionVariables.set(\"tripId\", json.id);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "02 - Get Trips as USER",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{tokenUser}}"
+              }
+            ],
+            "url": "{{baseUrl}}/api/resourceB",
+            "description": "Acceso: USER y ADMIN."
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status 200 OK\", function () {",
+                  "  pm.response.to.have.status(200);",
+                  "});",
+                  "const json = pm.response.json();",
+                  "pm.test(\"Retorna arreglo\", function () {",
+                  "  pm.expect(json).to.be.an(\"array\");",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "03 - Get Trip By Id as USER",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{tokenUser}}"
+              }
+            ],
+            "url": "{{baseUrl}}/api/resourceB/{{tripId}}",
+            "description": "Acceso: USER y ADMIN."
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status 200 OK\", function () {",
+                  "  pm.response.to.have.status(200);",
+                  "});",
+                  "const json = pm.response.json();",
+                  "pm.test(\"Retorna el trip creado\", function () {",
+                  "  pm.expect(String(json.id)).to.eql(String(pm.collectionVariables.get(\"tripId\")));",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "04 - Create Trip invalid payload",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{tokenAdmin}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/api/resourceB",
+            "description": "Acceso: solo ADMIN. Debe fallar por validacion.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"code\": \"\",\n  \"origin\": \"\",\n  \"destination\": \"\",\n  \"departureTime\": \"2020-01-01T08:00:00\",\n  \"availableSeats\": -1,\n  \"status\": \"OTRO\"\n}"
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status 400 Bad Request\", function () {",
+                  "  pm.response.to.have.status(400);",
+                  "});",
+                  "const json = pm.response.json();",
+                  "pm.test(\"Retorna error de validacion\", function () {",
+                  "  pm.expect(json.message).to.be.a(\"string\").and.not.empty;",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "05 - Create Trip as USER forbidden",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{tokenUser}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/api/resourceB",
+            "description": "Acceso esperado: solo ADMIN. USER debe recibir 403.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"code\": \"TR-USER-{{$timestamp}}\",\n  \"origin\": \"Bogota\",\n  \"destination\": \"Cali\",\n  \"departureTime\": \"2030-01-01T08:00:00\",\n  \"availableSeats\": 20,\n  \"status\": \"SCHEDULED\"\n}"
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status 403 Forbidden\", function () {",
+                  "  pm.response.to.have.status(403);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "06 - Update Trip as USER forbidden",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{tokenUser}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/api/resourceB/{{tripId}}",
+            "description": "Acceso esperado: solo ADMIN. USER debe recibir 403.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"code\": \"TR-LOCKED\",\n  \"origin\": \"Bogota\",\n  \"destination\": \"Cali\",\n  \"departureTime\": \"2030-01-01T08:00:00\",\n  \"availableSeats\": 22,\n  \"status\": \"SCHEDULED\"\n}"
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status 403 Forbidden\", function () {",
+                  "  pm.response.to.have.status(403);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "07 - Delete Trip as USER forbidden",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{tokenUser}}"
+              }
+            ],
+            "url": "{{baseUrl}}/api/resourceB/{{tripId}}",
+            "description": "Acceso esperado: solo ADMIN. USER debe recibir 403."
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status 403 Forbidden\", function () {",
+                  "  pm.response.to.have.status(403);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "08 - Update Trip as ADMIN",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{tokenAdmin}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/api/resourceB/{{tripId}}",
+            "description": "Acceso: solo ADMIN.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"code\": \"TR-UPDATED\",\n  \"origin\": \"Bogota\",\n  \"destination\": \"Cali\",\n  \"departureTime\": \"2030-01-01T08:00:00\",\n  \"availableSeats\": 28,\n  \"status\": \"SCHEDULED\"\n}"
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status 200 OK\", function () {",
+                  "  pm.response.to.have.status(200);",
+                  "});",
+                  "const json = pm.response.json();",
+                  "pm.test(\"Actualiza trip\", function () {",
+                  "  pm.expect(json.destination).to.eql(\"Cali\");",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "09 - Delete Trip as ADMIN",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{tokenAdmin}}"
+              }
+            ],
+            "url": "{{baseUrl}}/api/resourceB/{{tripId}}",
+            "description": "Acceso: solo ADMIN."
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status 204 No Content\", function () {",
+                  "  pm.response.to.have.status(204);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "10 - Get Trip Not Found",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{tokenUser}}"
+              }
+            ],
+            "url": "{{baseUrl}}/api/resourceB/{{nonExistingId}}",
+            "description": "Acceso: USER y ADMIN. Debe retornar 404 si el id no existe."
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status 404 Not Found\", function () {",
+                  "  pm.response.to.have.status(404);",
+                  "});",
+                  "const json = pm.response.json();",
+                  "pm.test(\"Mensaje correcto\", function () {",
+                  "  pm.expect(json.message).to.include(\"Trip not found\");",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "11 - Get Trips without token",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/api/resourceB",
+            "description": "Sin token. Debe rechazar acceso."
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status 401 o 403\", function () {",
+                  "  pm.expect([401, 403]).to.include(pm.response.code);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

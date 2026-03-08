@@ -1,0 +1,28 @@
+server:
+  port: 8080
+
+spring:
+  main:
+    web-application-type: reactive
+
+app:
+  jwt:
+    secret: ${APP_JWT_SECRET:ChangeThisSecretKeyForJwtSigning1234567890}
+    expiration-minutes: ${APP_JWT_EXPIRATION_MINUTES:60}
+  postgres:
+    host: ${POSTGRES_HOST:localhost}
+    port: ${POSTGRES_PORT:5432}
+    database: ${POSTGRES_DB:transportdb}
+    username: ${POSTGRES_USER:transport}
+    password: ${POSTGRES_PASSWORD:transport}
+  mysql:
+    host: ${MYSQL_HOST:localhost}
+    port: ${MYSQL_PORT:3306}
+    database: ${MYSQL_DB:transportdb}
+    username: ${MYSQL_USER:transport}
+    password: ${MYSQL_PASSWORD:transport}
+
+logging:
+  level:
+    org.springframework.security: INFO
+    io.r2dbc: INFO

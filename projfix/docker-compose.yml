@@ -1,0 +1,68 @@
+version: "3.9"
+
+services:
+  api:
+    build: .
+    container_name: transport-passenger-api
+    ports:
+      - "8080:8080"
+    environment:
+      APP_JWT_SECRET: ChangeThisSecretKeyForJwtSigning1234567890
+      APP_JWT_EXPIRATION_MINUTES: 60
+      POSTGRES_HOST: postgres
+      POSTGRES_PORT: 5432
+      POSTGRES_DB: transportdb
+      POSTGRES_USER: transport
+      POSTGRES_PASSWORD: transport
+      MYSQL_HOST: mysql
+      MYSQL_PORT: 3306
+      MYSQL_DB: transportdb
+      MYSQL_USER: transport
+      MYSQL_PASSWORD: transport
+    depends_on:
+      postgres:
+        condition: service_healthy
+      mysql:
+        condition: service_healthy
+    restart: on-failure
+
+  postgres:
+    image: postgres:16-alpine
+    container_name: transport-postgres
+    environment:
+      POSTGRES_DB: transportdb
+      POSTGRES_USER: transport
+      POSTGRES_PASSWORD: transport
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U transport -d transportdb"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 10s
+
+  mysql:
+    image: mysql:8.0.45
+    container_name: transport-mysql
+    environment:
+      MYSQL_DATABASE: transportdb
+      MYSQL_USER: transport
+      MYSQL_PASSWORD: transport
+      MYSQL_ROOT_PASSWORD: root
+    ports:
+      - "3310:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD-SHELL", "mysqladmin ping -h localhost -proot || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 20
+      start_period: 20s
+
+volumes:
+  postgres_data:
+  mysql_data:
