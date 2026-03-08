@@ -21,6 +21,7 @@ public class SecurityConfig {
                 .httpBasic(ServerHttpSecurity.HttpBasicSpec::disable)
                 .formLogin(ServerHttpSecurity.FormLoginSpec::disable)
                 .authorizeExchange(exchanges -> exchanges
+                        .pathMatchers("/auth/register", "/auth/login", "/health").permitAll()
                         .pathMatchers("/auth/register", "/auth/login").permitAll()
                         .pathMatchers(HttpMethod.GET, "/api/resourceA", "/api/resourceA/*").hasAnyRole("USER", "ADMIN")
                         .pathMatchers(HttpMethod.POST, "/api/resourceA").hasAnyRole("USER", "ADMIN")
